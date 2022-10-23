@@ -1,0 +1,97 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shop_app/providers/auth.dart';
+import 'package:shop_app/providers/product.dart';
+import 'package:shop_app/providers/products.dart';
+import 'package:shop_app/screens/product_detail_screen.dart';
+import '../providers/product.dart';
+import '../providers/cart.dart';
+
+class ProductItem extends StatefulWidget {
+  ProductItem(String id, String title, String imageUrl);
+
+  @override
+  State<ProductItem> createState() => _ProductItemState();
+}
+
+class _ProductItemState extends State<ProductItem> {
+  //final String id;
+  @override
+  Widget build(BuildContext context) {
+    final product = Provider.of<Product>(context);
+    final userData = Provider.of<Auth>(context);
+    final produtcts = Provider.of<Products>(context);
+    final cart = Provider.of<Cart>(context, listen: false);
+
+    didChangeDependencies(
+        //item.entry.remove();
+        );
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: GridTile(
+        child: GestureDetector(
+            onTap: () {
+              Navigator.of(context).pushNamed(ProductDetailScreen.routeName,
+                  arguments: product.id);
+            },
+            child: Hero(
+              tag: product.id,
+              child: FadeInImage(
+                placeholder: AssetImage("lib/images/product-placeholder.png"),
+                image: NetworkImage(product.imageUrl),
+                fit: BoxFit.cover,
+              ),
+            )),
+        footer: GridTileBar(
+          leading: Consumer<Product>(
+            builder: (context, value, child) => IconButton(
+              icon: Icon(product.isFavorite
+                  ? Icons.favorite
+                  : Icons.favorite_border_outlined),
+              color: Theme.of(context).colorScheme.secondary,
+              onPressed: () async {
+                product.toggleFavoriteStatus();
+                try {
+                  await Provider.of<Product>(context, listen: false)
+                      .saveFavorite(
+                          product.id, userData.userId!, produtcts.authToken);
+                } catch (error) {
+                  product.toggleFavoriteStatus();
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text("Somethign gone wrong"),
+                    duration: Duration(milliseconds: 2000),
+                  ));
+                }
+              },
+            ),
+          ),
+          backgroundColor: Colors.black87,
+          title: Text(
+            product.title,
+            textAlign: TextAlign.center,
+          ),
+          trailing: IconButton(
+            icon: Icon(Icons.shopping_bag),
+            color: Theme.of(context).colorScheme.secondary,
+            onPressed: () {
+              cart.addItem(
+                  product.id, product.price, product.title, product.imageUrl);
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text("Added item to Cart!"),
+                duration: Duration(milliseconds: 2000),
+                action: SnackBarAction(
+                  label: "UNDO",
+                  onPressed: () {
+                    cart.deleteSingleItem(product.id);
+                  },
+                ),
+              ));
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
