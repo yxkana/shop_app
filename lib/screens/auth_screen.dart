@@ -163,7 +163,11 @@ class _AuthCardState extends State<AuthCard>
       } else {
         // Sign user up
         await Provider.of<Auth>(context, listen: false)
-            .signUP(_authData["email"], _authData["password"]);
+            .signUP(_authData["email"], _authData["password"])
+            .then((value) async {
+          await Provider.of<Auth>(context, listen: false)
+              .loginUP(_authData["email"], _authData["password"]);
+        });
       }
     } on ErrorDescription catch (error) {
       if (error.toString().contains("EMAIL")) {
